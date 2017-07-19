@@ -32,7 +32,7 @@ namespace FEC_App_170608
                 if (_sensor.IsOpen)
                 {
                     _coordinateMapper = _sensor.CoordinateMapper;
-                    _multiSourceFrameReader = _sensor.OpenMultiSourceFrameReader(FrameSourceTypes.Color |FrameSourceTypes.Depth | FrameSourceTypes.Body | FrameSourceTypes.BodyIndex);
+                    _multiSourceFrameReader = _sensor.OpenMultiSourceFrameReader(FrameSourceTypes.Color |FrameSourceTypes.Infrared | FrameSourceTypes.Body | FrameSourceTypes.BodyIndex);
                     _multiSourceFrameReader.MultiSourceFrameArrived += multiSourceReader_FrameArrived;
 
                     _faceSource = new HighDefinitionFaceFrameSource(_sensor);
@@ -83,6 +83,22 @@ namespace FEC_App_170608
                     }
                 }
             });
+
+            /*
+            Task.Factory.StartNew(() =>
+            {
+                InfraredFrame _infraredFrame = null;
+                using (_infraredFrame = _multiSourceFrame.InfraredFrameReference.AcquireFrame())
+                {
+                    //_worker.WriteDepth(_depthFrame, milliseconds);
+                    if (_infraredFrame != null)
+                    {
+                        _worker.WriteInfrared(_infraredFrame, timeNow);
+                    }
+                    
+                }
+            });
+            */
 
             /*
             Task.Factory.StartNew(() =>

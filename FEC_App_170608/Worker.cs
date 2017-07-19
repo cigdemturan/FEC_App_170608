@@ -25,7 +25,7 @@ namespace FEC_App_170608
     {
         public string _fileName { get; set; }
         private string _folderNameRec = "recording";
-        private string _rgbFolder, _depthFolder, _verticesFolder, _animationUnitFolder;
+        private string _rgbFolder, _verticesFolder, _animationUnitFolder, _depthFolder, _infraredFolder;
         //public FileStream jointsFileStream { get; set; }
         public int counterFile;
         public int counterFrame;
@@ -49,6 +49,8 @@ namespace FEC_App_170608
         {
             _rgbFolder = _folderNameRec + "/rgb_" + counterFile + "/";
             Directory.CreateDirectory(_rgbFolder);
+            //_infraredFolder = _folderNameRec + "/infrared_" + counterFile + "/";
+            //Directory.CreateDirectory(_infraredFolder);
         }
         public FileStream InilizeVertices3DStream()
         {
@@ -146,6 +148,48 @@ namespace FEC_App_170608
             }
             _depthFrame.Dispose();
         }
+
+        public void WriteInfrared(InfraredFrame _infraredFrame, string milliseconds)
+        {
+            FrameDescription infraredFrameDescription = _infraredFrame.FrameDescription;
+            //uint depthSize = depthFrameDescription.LengthInPixels;
+            byte[] pixelsInfrared = null;
+            ushort[] infraredData = new ushort[infraredFrameDescription.Width * infraredFrameDescription.Height]; //Depth
+            pixelsInfrared = new byte[infraredFrameDescription.Width * infraredFrameDescription.Height * bytesPerPixel]; //Depth
+            _infraredFrame.CopyFrameDataToArray(infraredData);
+
+
+            int colorImageIndex = 0;
+            for (int infraredIndex = 0; infraredIndex < infraredData.Length; ++infraredIndex)
+            {
+                ushort ir = infraredData[infraredIndex];
+                byte intensity = (byte)(ir >> 8);
+
+                pixelsInfrared[colorImageIndex++] = intensity; // Blue
+                pixelsInfrared[colorImageIndex++] = intensity; // Green   
+                pixelsInfrared[colorImageIndex++] = intensity; // Red
+
+                ++colorImageIndex;
+            }
+
+            int stride = infraredFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
+
+            BitmapSource _imageInfrared = BitmapSource.Create(infraredFrameDescription.Width, infraredFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsInfrared, stride);
+            //Console.WriteLine("here");
+            string filePath = _infraredFolder + "/image" + milliseconds + ".png";
+
+            using (FileStream infrared_FileStream = new FileStream(filePath, FileMode.Create))
+            {
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(_imageInfrared));
+                encoder.Save(infrared_FileStream);
+                //Console.WriteLine("saved..");
+                infrared_FileStream.Close();
+                infrared_FileStream.Dispose();
+            }
+            _infraredFrame.Dispose();
+        }
+
 
         public void WriteDepthInColorSpace(DepthFrame _depthFrame, CoordinateMapper _coordinateMapper, long milliseconds)
         {
@@ -260,6 +304,7 @@ namespace FEC_App_170608
                     CameraSpacePoint vertice3D = _vertices3D[index];
                     //if (vertice3D.)
                     ColorSpacePoint vertice2D = _coordinateMapper.MapCameraPointToColorSpace(vertice3D);
+                    //DepthSpacePoint vertice2D = _coordinateMapper.MapCameraPointToDepthSpace(vertice3D);
 
                     vertices3DWriter.Write("{0}, ", vertice3D.X);
                     vertices3DWriter.Write("{0}, ", vertice3D.Y);
