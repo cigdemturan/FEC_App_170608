@@ -24,7 +24,7 @@ namespace FEC_App_170608
     class Worker
     {
         public string _fileName { get; set; }
-        private string _folderNameRec = "recording";
+        private string _folderNameRec = "D:\\FEC_DATABASE\\S_instance\\";
         private string _rgbFolder, _verticesFolder, _animationUnitFolder, _depthFolder, _infraredFolder;
         //public FileStream jointsFileStream { get; set; }
         public int counterFile;
@@ -40,17 +40,19 @@ namespace FEC_App_170608
             //Directory.CreateDirectory(_rgbFolder);
             //_depthFolder = _folderNameRec + "/depth/";
             //Directory.CreateDirectory(_depthFolder);
-            _verticesFolder = _folderNameRec + "/vertices/";
+            _verticesFolder = _folderNameRec + "vertices\\";
             Directory.CreateDirectory(_verticesFolder);
-            _animationUnitFolder = _folderNameRec + "/AnU/";
+            _animationUnitFolder = _folderNameRec + "AnU\\";
             Directory.CreateDirectory(_animationUnitFolder);
         }
         public void CreateFolderRGB()
         {
-            _rgbFolder = _folderNameRec + "/rgb_" + counterFile + "/";
+            _rgbFolder = _folderNameRec + "rgb_" + counterFile;
             Directory.CreateDirectory(_rgbFolder);
-            //_infraredFolder = _folderNameRec + "/infrared_" + counterFile + "/";
-            //Directory.CreateDirectory(_infraredFolder);
+            _infraredFolder = "R:\\S_instance\\infrared_" + counterFile;
+            Directory.CreateDirectory(_infraredFolder);
+            _depthFolder = "R:\\S_instance\\depth_" + counterFile;
+            Directory.CreateDirectory(_depthFolder);
         }
         public FileStream InilizeVertices3DStream()
         {
@@ -79,7 +81,7 @@ namespace FEC_App_170608
 
         public void WriteColor(ColorFrame _colorFrame, string milliseconds)
         {
-            string filePath = _rgbFolder + "/image_" + milliseconds + ".png";
+            string filePath = _rgbFolder + "\\image_" + milliseconds + ".png";
             colorFrameDescription = _colorFrame.FrameDescription;
             //Console.WriteLine("colorFrame is here");
             byte[] pixelsColor = new byte[colorFrameDescription.Width * colorFrameDescription.Height * bytesPerPixel];
@@ -106,7 +108,7 @@ namespace FEC_App_170608
 
         }
 
-        public void WriteDepth(DepthFrame _depthFrame, long milliseconds)
+        public void WriteDepth(DepthFrame _depthFrame, string milliseconds)
         {
             FrameDescription depthFrameDescription = _depthFrame.FrameDescription;
             //uint depthSize = depthFrameDescription.LengthInPixels;
@@ -134,13 +136,14 @@ namespace FEC_App_170608
             int stride = depthFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
 
             BitmapSource _imageDepth = BitmapSource.Create(depthFrameDescription.Width, depthFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsDepth, stride);
+            BitmapSource _imageDepth_cropped = new CroppedBitmap(_imageDepth, new Int32Rect(120, 50, 250, 350));
             //Console.WriteLine("here");
-            string filePath = _depthFolder + "/image" + milliseconds + ".png";
+            string filePath = _depthFolder + "\\depth_" + milliseconds + ".png";
 
             using (FileStream depth_FileStream = new FileStream(filePath, FileMode.Create))
             {
                 BitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(_imageDepth));
+                encoder.Frames.Add(BitmapFrame.Create(_imageDepth_cropped));
                 encoder.Save(depth_FileStream);
                 //Console.WriteLine("saved..");
                 depth_FileStream.Close();
@@ -175,13 +178,14 @@ namespace FEC_App_170608
             int stride = infraredFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
 
             BitmapSource _imageInfrared = BitmapSource.Create(infraredFrameDescription.Width, infraredFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsInfrared, stride);
+            BitmapSource _imageInfrared_cropped = new CroppedBitmap(_imageInfrared, new Int32Rect(120, 50, 250, 350));
             //Console.WriteLine("here");
-            string filePath = _infraredFolder + "/image" + milliseconds + ".png";
+            string filePath = _infraredFolder + "\\infrared_" + milliseconds + ".png";
 
             using (FileStream infrared_FileStream = new FileStream(filePath, FileMode.Create))
             {
                 BitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(_imageInfrared));
+                encoder.Frames.Add(BitmapFrame.Create(_imageInfrared_cropped));
                 encoder.Save(infrared_FileStream);
                 //Console.WriteLine("saved..");
                 infrared_FileStream.Close();
@@ -191,7 +195,7 @@ namespace FEC_App_170608
         }
 
 
-        public void WriteDepthInColorSpace(DepthFrame _depthFrame, CoordinateMapper _coordinateMapper, long milliseconds)
+        public void WriteDepthInColorSpace(DepthFrame _depthFrame, CoordinateMapper _coordinateMapper, string milliseconds)
         {
             FrameDescription depthFrameDescription = _depthFrame.FrameDescription;
             byte[] pixelsDepth = null;
@@ -241,7 +245,7 @@ namespace FEC_App_170608
 
             int stride = colorFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
             BitmapSource _imageDepth = BitmapSource.Create(colorFrameDescription.Width, colorFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsDepth, stride);
-            string filePath = _depthFolder + "/depth" + milliseconds + ".png";
+            string filePath = _depthFolder + "\\depth_" + milliseconds + ".png";
             BitmapSource _imageDepth_cropped = new CroppedBitmap(_imageDepth, new Int32Rect(900, 280, 500, 500));
             using (FileStream depth_FileStream = new FileStream(filePath, FileMode.Create))
             {
