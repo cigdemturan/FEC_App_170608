@@ -84,7 +84,7 @@ namespace FEC_App_170608
                 }
             });
 
-            
+            /*
             Task.Factory.StartNew(() =>
             {
                 InfraredFrame _infraredFrame = null;
@@ -115,7 +115,7 @@ namespace FEC_App_170608
                     
                 }
             });
-            
+            */
 
             Task.Factory.StartNew(() =>
             {

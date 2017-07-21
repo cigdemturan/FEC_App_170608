@@ -136,7 +136,7 @@ namespace FEC_App_170608
             int stride = depthFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
 
             BitmapSource _imageDepth = BitmapSource.Create(depthFrameDescription.Width, depthFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsDepth, stride);
-            BitmapSource _imageDepth_cropped = new CroppedBitmap(_imageDepth, new Int32Rect(120, 50, 250, 350));
+            BitmapSource _imageDepth_cropped = new CroppedBitmap(_imageDepth, new Int32Rect(120, 100, 250, 250));
             //Console.WriteLine("here");
             string filePath = _depthFolder + "\\depth_" + milliseconds + ".png";
 
@@ -178,7 +178,7 @@ namespace FEC_App_170608
             int stride = infraredFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
 
             BitmapSource _imageInfrared = BitmapSource.Create(infraredFrameDescription.Width, infraredFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsInfrared, stride);
-            BitmapSource _imageInfrared_cropped = new CroppedBitmap(_imageInfrared, new Int32Rect(120, 50, 250, 350));
+            BitmapSource _imageInfrared_cropped = new CroppedBitmap(_imageInfrared, new Int32Rect(120, 100, 250, 250));
             //Console.WriteLine("here");
             string filePath = _infraredFolder + "\\infrared_" + milliseconds + ".png";
 
