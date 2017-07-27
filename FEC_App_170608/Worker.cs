@@ -33,6 +33,8 @@ namespace FEC_App_170608
         private readonly int bytesPerPixelBI = (PixelFormats.Gray8.BitsPerPixel + 7) / 8;
         public FrameDescription colorFrameDescription { get; set; }
         public Body[] _bodies = new Body[6];
+        private StreamWriter _animationUnitWriter = null, vertices3DWriter = null, vertices2DWriter = null;
+
 
         public void CreateFolders()
         {
@@ -54,29 +56,32 @@ namespace FEC_App_170608
             _depthFolder = "R:\\S_instance\\depth_" + counterFile;
             Directory.CreateDirectory(_depthFolder);
         }
-        public FileStream InilizeVertices3DStream()
+        public void InilizeVertices3DStream()
         {
             //long milliseconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
             //string verticesFile = _verticesFolder + "vertices_" + counterFile + "_" + milliseconds + ".txt";
-            string verticesFile = _verticesFolder + "vertices3D_" + counterFile + ".txt";
-            FileStream verticesFileStream = new FileStream(verticesFile, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            return verticesFileStream;
+            string verticesFile3D = _verticesFolder + "vertices3D_" + counterFile + ".txt";
+            FileStream vertices3DFileStream = new FileStream(verticesFile3D, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            vertices3DWriter = new StreamWriter(vertices3DFileStream);
+            //return verticesFileStream;
         }
-        public FileStream InilizeVertices2DStream()
+        public void InilizeVertices2DStream()
         {
             //long milliseconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
             //string verticesFile = _verticesFolder + "vertices_" + counterFile + "_" + milliseconds + ".txt";
-            string verticesFile = _verticesFolder + "vertices2D_" + counterFile + ".txt";
-            FileStream verticesFileStream = new FileStream(verticesFile, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            return verticesFileStream;
+            string verticesFile2D = _verticesFolder + "vertices2D_" + counterFile + ".txt";
+            FileStream vertices2DFileStream = new FileStream(verticesFile2D, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            vertices2DWriter = new StreamWriter(vertices2DFileStream);
+            //return verticesFileStream;
         }
-        public FileStream InilizeAnimationUnitStream()
+        public void InilizeAnimationUnitStream()
         {
             //long milliseconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
             //string animationUnitFile = _animationUnitFolder + "AnU_" + counterFile + "_" + milliseconds + "_.txt";
             string animationUnitFile = _animationUnitFolder + "AnU_" + counterFile + ".txt";
             FileStream animationUnitStream = new FileStream(animationUnitFile, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            return animationUnitStream;
+            _animationUnitWriter = new StreamWriter(animationUnitStream);
+            //return animationUnitStream;
         }
 
         public void WriteColor(ColorFrame _colorFrame, string milliseconds)
@@ -96,7 +101,7 @@ namespace FEC_App_170608
 
             int stride = colorFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
             BitmapSource _imageRGB = BitmapSource.Create(colorFrameDescription.Width, colorFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsColor, stride);
-            BitmapSource _imageRGB_cropped = new CroppedBitmap(_imageRGB, new Int32Rect(850, 250, 400, 500));
+            BitmapSource _imageRGB_cropped = new CroppedBitmap(_imageRGB, new Int32Rect(850, 350, 400, 500));
             using (FileStream rgb_FileStream = new FileStream(filePath, FileMode.Create))
             {
                 BitmapEncoder encoder = new PngBitmapEncoder();
@@ -260,9 +265,9 @@ namespace FEC_App_170608
             _depthFrame.Dispose();
         }
 
-        public void WriteAnimationUnits(FaceAlignment _faceAlignment, FileStream _animationUnitStream, TimeSpan milliseconds, bool flag = true)
+        public void WriteAnimationUnits(FaceAlignment _faceAlignment, TimeSpan milliseconds, bool flag = true)
         {
-            var _animationUnitWriter = new StreamWriter(_animationUnitStream);
+            //var _animationUnitWriter = new StreamWriter(_animationUnitStream);
             _animationUnitWriter.Write("\r\n");
             _animationUnitWriter.Write("{0}, ", milliseconds);
             if (flag)
@@ -284,12 +289,10 @@ namespace FEC_App_170608
 
         }
 
-        public void WriteVertices(FaceModel _faceModel, FaceAlignment _faceAlignment, FileStream _vertices3DFileStream, FileStream _vertices2DFileStream, CoordinateMapper _coordinateMapper, TimeSpan milliseconds, bool flag = true)
+        public void WriteVertices(FaceModel _faceModel, FaceAlignment _faceAlignment, CoordinateMapper _coordinateMapper, TimeSpan milliseconds, bool flag = true)
         {
-            var vertices3DWriter = new StreamWriter(_vertices3DFileStream);
             vertices3DWriter.Write("\r\n");
             vertices3DWriter.Write("{0}, ", milliseconds);
-            var vertices2DWriter = new StreamWriter(_vertices2DFileStream);
             vertices2DWriter.Write("\r\n");
             vertices2DWriter.Write("{0}, ", milliseconds);
 
@@ -302,7 +305,7 @@ namespace FEC_App_170608
 
                 //_coordinateMapper.MapCameraPointsToColorSpace(_vertices3D, _vertices2D);
 
-                for (int index = 0; index < _vertices3D.Count; index++)
+                /*for (int index = 0; index < _vertices3D.Count; index++)
                 {
                     
                     CameraSpacePoint vertice3D = _vertices3D[index];
@@ -318,15 +321,60 @@ namespace FEC_App_170608
                     vertices2DWriter.Write("{0}, ", vertice2D.Y);
                     
                 }
+                */
+
+                foreach (CameraSpacePoint vertice3D in _vertices3D)
+                {
+                    ColorSpacePoint vertice2D = _coordinateMapper.MapCameraPointToColorSpace(vertice3D);
+                    try
+                    {
+                        vertices3DWriter.Write("{0}, ", vertice3D.X);
+                        vertices3DWriter.Write("{0}, ", vertice3D.Y);
+                        vertices3DWriter.Write("{0}, ", vertice3D.Z);
+
+                        vertices2DWriter.Write("{0}, ", vertice2D.X);
+                        vertices2DWriter.Write("{0}, ", vertice2D.Y);
+                        vertices3DWriter.Flush();
+                        vertices2DWriter.Flush();
+                    }
+                    catch (IndexOutOfRangeException e1 )
+                    {
+                        Console.WriteLine("Exception caught: {0}", e1);
+                    }
+                    catch (ArgumentOutOfRangeException e2)
+                    {
+                        Console.WriteLine("Exception caught: {0}", e2);
+                    }
+                    /*finally
+                    {
+                        vertices3DWriter.Write("IOORexception, ");
+                        vertices2DWriter.Write("NaN, ");
+                        vertices2DWriter.Write("NaN, ");
+                    }*/
+                }
+
+
             }
             else
             {
-                vertices3DWriter.Write("NaN, ");
-                vertices2DWriter.Write("NaN, ");
+                try
+                {
+                    vertices3DWriter.Write("NaN, ");
+                    vertices2DWriter.Write("NaN, ");
+                    vertices3DWriter.Flush();
+                    vertices2DWriter.Flush();
+                }
+                catch (IndexOutOfRangeException e1)
+                {
+                    Console.WriteLine("Exception caught: {0}", e1);
+                }
+                catch (ArgumentOutOfRangeException e2)
+                {
+                    Console.WriteLine("Exception caught: {0}", e2);
+                }
             }
 
-            vertices3DWriter.Flush();
-            vertices2DWriter.Flush();
+            
         } 
 
     }

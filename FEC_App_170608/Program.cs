@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Kinect;
 using Microsoft.Kinect.Face;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
 
 namespace FEC_App_170608
 {
@@ -21,6 +24,7 @@ namespace FEC_App_170608
         public static Worker _worker = new Worker();
         public static FileStream _animationUnitStream, _vertices2DFileStream, _vertices3DFileStream;
         public static bool trackingSuccess = false;
+
         static void Main(string[] args)
         {
             _sensor = KinectSensor.GetDefault();
@@ -31,6 +35,10 @@ namespace FEC_App_170608
                 Console.WriteLine("sensorOpened");
                 if (_sensor.IsOpen)
                 {
+                    /*TcpListener server = null;
+                    Thread thread = new Thread(new ThreadStart(ListenTCPClient));
+                    thread.Start();*/
+
                     _coordinateMapper = _sensor.CoordinateMapper;
                     _multiSourceFrameReader = _sensor.OpenMultiSourceFrameReader(FrameSourceTypes.Color | FrameSourceTypes.Depth | FrameSourceTypes.Infrared | FrameSourceTypes.Body | FrameSourceTypes.BodyIndex);
                     _multiSourceFrameReader.MultiSourceFrameArrived += multiSourceReader_FrameArrived;
@@ -48,6 +56,12 @@ namespace FEC_App_170608
             _sensor.Close();
         }
 
+        /*static void ListenTCPClient()
+        {
+
+        }*/
+
+
         static void multiSourceReader_FrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
         {
 
@@ -60,9 +74,12 @@ namespace FEC_App_170608
             {
                 _worker.CreateFolders();
                 _worker.CreateFolderRGB();
-                _animationUnitStream = _worker.InilizeAnimationUnitStream();
-                _vertices2DFileStream = _worker.InilizeVertices2DStream();
-                _vertices3DFileStream = _worker.InilizeVertices3DStream();
+                //_animationUnitStream = _worker.InilizeAnimationUnitStream();
+                //_vertices2DFileStream = _worker.InilizeVertices2DStream();
+                //_vertices3DFileStream = _worker.InilizeVertices3DStream();
+                _worker.InilizeAnimationUnitStream();
+                _worker.InilizeVertices2DStream();
+                _worker.InilizeVertices3DStream();
             }
             //Console.WriteLine(_worker.counterFrame);
             //long milliseconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -84,7 +101,7 @@ namespace FEC_App_170608
                 }
             });
 
-            /*
+            
             Task.Factory.StartNew(() =>
             {
                 InfraredFrame _infraredFrame = null;
@@ -115,7 +132,7 @@ namespace FEC_App_170608
                     
                 }
             });
-            */
+            
 
             Task.Factory.StartNew(() =>
             {
@@ -147,9 +164,12 @@ namespace FEC_App_170608
                 _worker.counterFrame = 0;
                 _worker.counterFile++;
                 _worker.CreateFolderRGB();
-                _animationUnitStream = _worker.InilizeAnimationUnitStream();
-                _vertices2DFileStream = _worker.InilizeVertices2DStream();
-                _vertices3DFileStream = _worker.InilizeVertices3DStream();
+                //_animationUnitStream = _worker.InilizeAnimationUnitStream();
+                //_vertices2DFileStream = _worker.InilizeVertices2DStream();
+                //_vertices3DFileStream = _worker.InilizeVertices3DStream();
+                _worker.InilizeAnimationUnitStream();
+                _worker.InilizeVertices2DStream();
+                _worker.InilizeVertices3DStream();
             }
 
 
@@ -157,43 +177,43 @@ namespace FEC_App_170608
 
         static void FaceReader_FrameArrived(object sender, HighDefinitionFaceFrameArrivedEventArgs e)
         {
-            Task.Factory.StartNew(() =>
+            TimeSpan milliseconds = DateTime.Now.TimeOfDay;
+            //Console.WriteLine(milliseconds);
+            using (var _faceFrame = e.FrameReference.AcquireFrame())
             {
-                TimeSpan milliseconds = DateTime.Now.TimeOfDay;
-                //Console.WriteLine(milliseconds);
-                using (var _faceFrame = e.FrameReference.AcquireFrame())
-                {
 
-                    if (_faceFrame != null && _faceFrame.IsFaceTracked)
+                if (_faceFrame != null && _faceFrame.IsFaceTracked)
+                {
+                    if (!trackingSuccess)
                     {
-                        if (!trackingSuccess)
-                        {
-                            Console.WriteLine("started face tracking..");
-                            trackingSuccess = true;
-                        }
-                        //Console.WriteLine("faceArrived");
-                        _faceFrame.GetAndRefreshFaceAlignmentResult(_faceAlignment);
-                        Task.Factory.StartNew(() =>
-                        {
-                            _worker.WriteAnimationUnits(_faceAlignment, _animationUnitStream, milliseconds);
-                        });
-                        Task.Factory.StartNew(() =>
-                        {
-                            _worker.WriteVertices(_faceModel, _faceAlignment, _vertices3DFileStream, _vertices2DFileStream, _coordinateMapper, milliseconds);
-                        });
+                        Console.WriteLine("started face tracking..");
+                        trackingSuccess = true;
                     }
-                    else
+                    //Console.WriteLine("faceArrived");
+                    _faceFrame.GetAndRefreshFaceAlignmentResult(_faceAlignment);
+                    Task.Factory.StartNew(() =>
                     {
-                        if (trackingSuccess)
-                        {
-                            Console.WriteLine("tracking is lost..");
-                            trackingSuccess = false;
-                        }
-                        _worker.WriteAnimationUnits(_faceAlignment, _animationUnitStream, milliseconds, false);
-                        _worker.WriteVertices(null, null, _vertices3DFileStream, _vertices2DFileStream, null, milliseconds, false);
-                    }
+                        //_worker.WriteAnimationUnits(_faceAlignment, _animationUnitStream, milliseconds);
+                        _worker.WriteAnimationUnits(_faceAlignment, milliseconds);
+                    });
+                    Task.Factory.StartNew(() =>
+                    {
+                        _worker.WriteVertices(_faceModel, _faceAlignment, _coordinateMapper, milliseconds);
+                    });
                 }
-            });
+                else
+                {
+                    if (trackingSuccess)
+                    {
+                        Console.WriteLine("tracking is lost..");
+                        trackingSuccess = false;
+                    }
+                    //_worker.WriteAnimationUnits(_faceAlignment, _animationUnitStream, milliseconds, false);
+                    _worker.WriteAnimationUnits(_faceAlignment, milliseconds, false);
+                    _worker.WriteVertices(null, null, null, milliseconds, false);
+                }
+            }
+        
         }
     }
 }
