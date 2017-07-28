@@ -101,7 +101,7 @@ namespace FEC_App_170608
 
             int stride = colorFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
             BitmapSource _imageRGB = BitmapSource.Create(colorFrameDescription.Width, colorFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, pixelsColor, stride);
-            BitmapSource _imageRGB_cropped = new CroppedBitmap(_imageRGB, new Int32Rect(850, 350, 400, 500));
+            BitmapSource _imageRGB_cropped = new CroppedBitmap(_imageRGB, new Int32Rect(850, 300, 400, 500));
             using (FileStream rgb_FileStream = new FileStream(filePath, FileMode.Create))
             {
                 BitmapEncoder encoder = new PngBitmapEncoder();
